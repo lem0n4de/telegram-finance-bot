@@ -1,0 +1,7 @@
+.idea/
+.vscode/
+node_modules/
+build/
+tmp/
+yarn-error.log
+database.sqlite
