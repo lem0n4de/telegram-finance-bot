@@ -1,15 +1,17 @@
 import "reflect-metadata";
-import { createConnection, Transaction } from "typeorm";
+import { createConnection, Transaction, Any } from "typeorm";
 import Telegraf, { ContextMessageUpdate } from "telegraf"
 const Extra = require('telegraf/extra')
 const Markup = require('telegraf/markup')
 import { MoneyTransaction } from "./entity/Transaction";
 import { Category } from "./entity/Category";
+import { User } from './entity/User'
 
 createConnection().then(async connection => {
 
     let transactionRepository = await connection.getRepository(MoneyTransaction)
     let categoryRepository = await connection.getRepository(Category)
+    let userRepository = await connection.getRepository(User)
 
     const bot = new Telegraf(process.env.BOT_TOKEN || "")
 
@@ -22,6 +24,7 @@ createConnection().then(async connection => {
             return strs.reverse().join(" ")
         }
     }
+
     async function newCategory(ctx: ContextMessageUpdate) {
         if (ctx.message) {
             let str = stripCommand(ctx.message.text)
@@ -54,30 +57,83 @@ createConnection().then(async connection => {
     }
     bot.command("rc", removeCategories)
 
+    async function getUser(ctx: ContextMessageUpdate) {
+        let user = await userRepository.findOne({ name : ctx.chat.username })
+        if (user) {
+            return user
+        }
+        user = new User(ctx.chat.username)
+        return await userRepository.save(user)
+    }
+
     async function gider(ctx: ContextMessageUpdate) {
         if (ctx.message) {
-            console.log(JSON.stringify(ctx))
+            // Eğer match[2] yok ise Date tanımlı işlem girilecek
+            let date = new Date()
+            let amount = parseFloat(ctx.match[1])
+            let user = await getUser(ctx)
+            if (ctx.match[2] == undefined) {
+                let t = new MoneyTransaction(user, false, amount, date)
+                transactionRepository.save(t)
+                ctx.reply(ctx.match[1] + " miktarlı " + date.toLocaleString("tr-TR") + " zamanlı işlem kaydedildi. \u{1F44D}")
+                return
+            }
+            let desc = ctx.match[2]
+            let t = new MoneyTransaction(user, false, amount, date, desc)
+            transactionRepository.save(t)
+            let newMoney = user.money -= t.amount
+            userRepository.createQueryBuilder().update().set({money: newMoney}).where("name = :name", {name: user.name}).execute()
+            ctx.reply(ctx.match[1] + " miktarlı, " + ctx.match[2] + " tanımlı işlem kaydedildi. \u{1F44D}")
         }
     }
-    bot.command("gider", gider)
+    bot.command("gi", gider)
+    bot.hears(/^[-]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gider)
 
-    async function gelir(ctx: ContextMessageUpdate) { }
-    bot.command("gelir", gelir)
+    async function gelir(ctx: ContextMessageUpdate) {
+        if (ctx.message) {
+            // Eğer match[2] yok ise Date tanımlı işlem girilecek
+            let date = new Date()
+            let amount = parseFloat(ctx.match[1])
+            let user = await getUser(ctx)
+            if (ctx.match[2] == undefined) {
+                let t = new MoneyTransaction(user, true, amount, date)
+                transactionRepository.save(t)
+                ctx.reply(ctx.match[1] + " miktarlı " + date.toLocaleString("tr-TR") + " zamanlı işlem kaydedildi. \u{1F44D}")
+                return
+            }
+            let desc = ctx.match[2]
+            let t = new MoneyTransaction(user, true, amount, date, desc)
+            transactionRepository.save(t)
+            let newMoney = user.money += t.amount
+            userRepository.createQueryBuilder().update().set({money: newMoney}).where("name = :name", {name: user.name}).execute()
+            ctx.reply(ctx.match[1] + " miktarlı, " + ctx.match[2] + " tanımlı işlem kaydedildi. \u{1F44D}")
+        }
+    }
+    bot.command("ge", gelir)
+    bot.hears(/^[+]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gelir)
+
+    async function currentMoney(ctx: ContextMessageUpdate) {
+        if (ctx.message) {
+            let user = await getUser(ctx)
+            ctx.replyWithMarkdown("Şu anki bakiyeniz:* \u{20BA}" + user.money + "*")
+        //     let gider = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : false}).execute()
+        //     let giderSum = 0
+        //     gider.forEach(e => {
+        //         giderSum += e.amount
+        //     });
+
+        //     let gelir = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : true}).execute()
+        //     let gelirSum = 0
+        //     gelir.forEach(e => {
+        //         gelirSum += e.amount
+        //     })
+
+        //     let net = gelirSum - giderSum
+        //     ctx.reply("Net para = " + "*" + net + "*")
+        }
+    }
+    bot.command("net", currentMoney)
+    bot.hears("net", currentMoney)
 
     bot.launch()
-
-    // console.log("Inserting a new user into the database...");
-    // const user = new User();
-    // user.firstName = "Timber";
-    // user.lastName = "Saw";
-    // user.age = 25;
-    // await connection.manager.save(user);
-    // console.log("Saved a new user with id: " + user.id);
-
-    // console.log("Loading users from the database...");
-    // const users = await connection.manager.find(User);
-    // console.log("Loaded users: ", users);
-
-    // console.log("Here you can setup and run express/koa/any other framework.");
-
 }).catch(error => console.log(error));
