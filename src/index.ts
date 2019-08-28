@@ -58,7 +58,7 @@ createConnection().then(async connection => {
     bot.command("rc", removeCategories)
 
     async function getUser(ctx: ContextMessageUpdate) {
-        let user = await userRepository.findOne({ name : ctx.chat.username })
+        let user = await userRepository.findOne({ name: ctx.chat.username })
         if (user) {
             return user
         }
@@ -82,12 +82,13 @@ createConnection().then(async connection => {
             let t = new MoneyTransaction(user, false, amount, date, desc)
             transactionRepository.save(t)
             let newMoney = user.money -= t.amount
-            userRepository.createQueryBuilder().update().set({money: newMoney}).where("name = :name", {name: user.name}).execute()
+            userRepository.createQueryBuilder().update().set({ money: newMoney }).where("name = :name", { name: user.name }).execute()
             ctx.reply(ctx.match[1] + " miktarlı, " + ctx.match[2] + " tanımlı işlem kaydedildi. \u{1F44D}")
         }
     }
     bot.command("gi", gider)
     bot.hears(/^[-]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gider)
+    bot.hears(/^(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gider)
 
     async function gelir(ctx: ContextMessageUpdate) {
         if (ctx.message) {
@@ -105,7 +106,7 @@ createConnection().then(async connection => {
             let t = new MoneyTransaction(user, true, amount, date, desc)
             transactionRepository.save(t)
             let newMoney = user.money += t.amount
-            userRepository.createQueryBuilder().update().set({money: newMoney}).where("name = :name", {name: user.name}).execute()
+            userRepository.createQueryBuilder().update().set({ money: newMoney }).where("name = :name", { name: user.name }).execute()
             ctx.reply(ctx.match[1] + " miktarlı, " + ctx.match[2] + " tanımlı işlem kaydedildi. \u{1F44D}")
         }
     }
@@ -116,20 +117,20 @@ createConnection().then(async connection => {
         if (ctx.message) {
             let user = await getUser(ctx)
             ctx.replyWithMarkdown("Şu anki bakiyeniz:* \u{20BA}" + user.money + "*")
-        //     let gider = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : false}).execute()
-        //     let giderSum = 0
-        //     gider.forEach(e => {
-        //         giderSum += e.amount
-        //     });
+            //     let gider = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : false}).execute()
+            //     let giderSum = 0
+            //     gider.forEach(e => {
+            //         giderSum += e.amount
+            //     });
 
-        //     let gelir = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : true}).execute()
-        //     let gelirSum = 0
-        //     gelir.forEach(e => {
-        //         gelirSum += e.amount
-        //     })
+            //     let gelir = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : true}).execute()
+            //     let gelirSum = 0
+            //     gelir.forEach(e => {
+            //         gelirSum += e.amount
+            //     })
 
-        //     let net = gelirSum - giderSum
-        //     ctx.reply("Net para = " + "*" + net + "*")
+            //     let net = gelirSum - giderSum
+            //     ctx.reply("Net para = " + "*" + net + "*")
         }
     }
     bot.command("net", currentMoney)
