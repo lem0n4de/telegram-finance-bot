@@ -1,7 +1,13 @@
-# Awesome Project Build with TypeORM
+# Telegram Cüzdanım Botu
 
-Steps to run this project:
+Cüzdanınızı takip edebilmek için elverişli bir yol aradığımdan telegram botu yaptım.
 
-1. Run `npm i` command
-2. Setup database settings inside `ormconfig.json` file
-3. Run `npm start` command
+- +/- sonrasında miktar ve açıklamayla kaydediliyor.
+> -8,5 tost yedim.
+
+> +250 haftalık
+
+- Bakiye görüntülemek için `net` yazmanız yeterli.
+> net
+
+> Şu anki bakiyeniz: *\u{20BA}1200*
