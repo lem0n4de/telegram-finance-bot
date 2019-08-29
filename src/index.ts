@@ -145,11 +145,10 @@ createConnection().then(async connection => {
         let hour = parseInt(arr[0])
         let min = parseInt(arr[1])
         let currentDate = new Date()
-        let queryDate = new Date()
-        ctx.reply(hour + " < saat | dakika >" + min)
+        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hour, min, 0, 0)
         await afterDate(ctx, queryDate)
     }
-    bot.hears(/^[>]\d{2}[:]\d{2}/iu, afterHour)
+    bot.hears(/^[>]\s*\d{2}[:]\d{2}/iu, afterHour)
 
     async function afterDay(ctx: ContextMessageUpdate) {
         let message = ctx.message.text
