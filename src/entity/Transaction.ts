@@ -8,7 +8,7 @@ export class MoneyTransaction {
         this.user = user
         this.positive = positive
         this.amount = amount
-        this.date = date
+        this.transactionDate = date
         this.description = desc
     }
 
@@ -24,8 +24,8 @@ export class MoneyTransaction {
     @Column("double")
     amount: number
 
-    @Column()
-    date: Date
+    @Column("datetime")
+    transactionDate: Date
 
     @Column({
         nullable : false 

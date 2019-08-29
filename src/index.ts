@@ -6,7 +6,9 @@ const Markup = require('telegraf/markup')
 import { MoneyTransaction } from "./entity/Transaction";
 import { Category } from "./entity/Category";
 import { User } from './entity/User'
+import { LaterThan } from "./Date";
 
+const TURKISH_LIRA = "\u{20BA}"
 createConnection().then(async connection => {
 
     let transactionRepository = await connection.getRepository(MoneyTransaction)
@@ -87,8 +89,8 @@ createConnection().then(async connection => {
         }
     }
     bot.command("gi", gider)
-    bot.hears(/^[-]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gider)
-    bot.hears(/^(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gider)
+    bot.hears(/^[-]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/iu, gider)
+    bot.hears(/^(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/iu, gider)
 
     async function gelir(ctx: ContextMessageUpdate) {
         if (ctx.message) {
@@ -111,30 +113,68 @@ createConnection().then(async connection => {
         }
     }
     bot.command("ge", gelir)
-    bot.hears(/^[+]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/u, gelir)
+    bot.hears(/^[+]\s*(\d+)\s*([\w\sığüşçö]+)?/iu, gelir)
 
     async function currentMoney(ctx: ContextMessageUpdate) {
         if (ctx.message) {
             let user = await getUser(ctx)
-            ctx.replyWithMarkdown("Şu anki bakiyeniz:* \u{20BA}" + user.money + "*")
-            //     let gider = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : false}).execute()
-            //     let giderSum = 0
-            //     gider.forEach(e => {
-            //         giderSum += e.amount
-            //     });
-
-            //     let gelir = await transactionRepository.createQueryBuilder().select("id, amount").where("positive = :p", { p : true}).execute()
-            //     let gelirSum = 0
-            //     gelir.forEach(e => {
-            //         gelirSum += e.amount
-            //     })
-
-            //     let net = gelirSum - giderSum
-            //     ctx.reply("Net para = " + "*" + net + "*")
+            ctx.replyWithMarkdown("Şu anki bakiyeniz:*" + TURKISH_LIRA + user.money + "*")
         }
     }
     bot.command("net", currentMoney)
-    bot.hears("net", currentMoney)
+    bot.hears(/^net$/i, currentMoney)
+
+    async function afterDate(ctx: ContextMessageUpdate, date: Date) {
+        let user = await getUser(ctx)
+        let l = await transactionRepository.find({
+            transactionDate: LaterThan(date),
+            user: user
+        })
+        if (l.length == 0) {
+            ctx.reply("Herhangi bir sonuç bulunamadı. \u{1F613}")
+            return
+        }
+        l.forEach(e => {
+            ctx.replyWithMarkdown("*"+TURKISH_LIRA+"*"+e.amount+"\n"+"*Tanım: *" + e.description+"\n"+"*Tarih:*   "+e.transactionDate.toLocaleString("tr-TR"))
+        })
+    }
+
+    async function afterHour(ctx: ContextMessageUpdate) {
+        let m = ctx.message.text
+        let arr = m.substr(1).split(":")
+        let hour = parseInt(arr[0])
+        let min = parseInt(arr[1])
+        let currentDate = new Date()
+        let queryDate = new Date()
+        ctx.reply(hour + " < saat | dakika >" + min)
+        await afterDate(ctx, queryDate)
+    }
+    bot.hears(/^[>]\d{2}[:]\d{2}/iu, afterHour)
+
+    async function afterDay(ctx: ContextMessageUpdate) {
+        let message = ctx.message.text
+        let day = parseInt(message.substr(1))
+        let currentDate = new Date()
+        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+        await afterDate(ctx, queryDate)
+    }
+    bot.command("after", afterDay)
+    bot.hears(/[>]\d{1,2}/iu, afterDay)
+
+    async function afterMonth(ctx: ContextMessageUpdate) {
+        ctx.reply(ctx.message.text)
+    }
+    bot.hears(/[>]\w{3}/iu, afterMonth)
+
+
+    async function todaysTransaction(ctx: ContextMessageUpdate) {
+        ctx.reply(ctx.message.text)
+    }
+    bot.command("today", todaysTransaction)
+    bot.hears(/^(today | bug[uü]n)$/iu, todaysTransaction)
+
+
+
 
     bot.launch()
 }).catch(error => console.log(error));

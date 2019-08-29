@@ -8,6 +8,7 @@
       "typescript": "3.3.3333"
    },
    "dependencies": {
+      "date-fns": "^2.0.1",
       "reflect-metadata": "^0.1.10",
       "sqlite3": "^4.1.0",
       "telegraf": "^3.32.0",
