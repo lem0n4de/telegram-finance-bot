@@ -118,7 +118,7 @@ createConnection().then(async connection => {
     async function currentMoney(ctx: ContextMessageUpdate) {
         if (ctx.message) {
             let user = await getUser(ctx)
-            ctx.replyWithMarkdown("Şu anki bakiyeniz:*" + TURKISH_LIRA + user.money + "*")
+            ctx.replyWithMarkdown("Şu anki bakiyeniz: *" + TURKISH_LIRA + user.money + "*\u{1F4B0}")
         }
     }
     bot.command("net", currentMoney)
@@ -135,7 +135,10 @@ createConnection().then(async connection => {
             return
         }
         l.forEach(e => {
-            ctx.replyWithMarkdown("*"+TURKISH_LIRA+"*"+e.amount+"\n"+"*Tanım: *" + e.description+"\n"+"*Tarih:*   "+e.transactionDate.toLocaleString("tr-TR"))
+            ctx.replyWithMarkdown(
+                "\u{2665} *"+TURKISH_LIRA+"*"+e.amount+"\n"
+                +"\u{2663} *Tanım: *" + e.description+"\n"
+                +"\u{2660} *Tarih:*   "+e.transactionDate.toLocaleString("tr-TR"))
         })
     }
 
@@ -158,7 +161,7 @@ createConnection().then(async connection => {
         await afterDate(ctx, queryDate)
     }
     bot.command("after", afterDay)
-    bot.hears(/[>]\d{1,2}/iu, afterDay)
+    bot.hears(/[>]\s*\d{1,2}/iu, afterDay)
 
     async function afterMonth(ctx: ContextMessageUpdate) {
         ctx.reply(ctx.message.text)
