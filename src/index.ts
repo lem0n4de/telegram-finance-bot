@@ -167,10 +167,13 @@ createConnection().then(async connection => {
 
 
     async function todaysTransaction(ctx: ContextMessageUpdate) {
-        ctx.reply(ctx.message.text)
+        let currentDate = new Date()
+        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
+        await afterDate(ctx, queryDate)
+        await currentMoney(ctx)
     }
     bot.command("today", todaysTransaction)
-    bot.hears(/^(today | bug[uü]n)$/iu, todaysTransaction)
+    bot.hears(/^today|bug[uü]n$/iu, todaysTransaction)
 
 
 
