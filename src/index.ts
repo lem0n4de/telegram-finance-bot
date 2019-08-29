@@ -1,14 +1,15 @@
 import "reflect-metadata";
-import { createConnection, Transaction, Any } from "typeorm";
-import Telegraf, { ContextMessageUpdate } from "telegraf"
+import { createConnection, Transaction, Any, FindOperator } from "typeorm";
+import Telegraf, { ContextMessageUpdate, Context } from "telegraf"
 const Extra = require('telegraf/extra')
 const Markup = require('telegraf/markup')
 import { MoneyTransaction } from "./entity/Transaction";
 import { Category } from "./entity/Category";
 import { User } from './entity/User'
-import { LaterThan } from "./Date";
+import { LaterThan, EarlierThan } from "./Date";
 
 const TURKISH_LIRA = "\u{20BA}"
+type comparisonFunction = (x: Date) => FindOperator<string>
 createConnection().then(async connection => {
 
     let transactionRepository = await connection.getRepository(MoneyTransaction)
@@ -90,7 +91,7 @@ createConnection().then(async connection => {
     }
     bot.command("gi", gider)
     bot.hears(/^[-]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/iu, gider)
-    bot.hears(/^(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/iu, gider)
+    bot.hears(/^(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)*/iu, gider)
 
     async function gelir(ctx: ContextMessageUpdate) {
         if (ctx.message) {
@@ -124,10 +125,10 @@ createConnection().then(async connection => {
     bot.command("net", currentMoney)
     bot.hears(/^net$/i, currentMoney)
 
-    async function afterDate(ctx: ContextMessageUpdate, date: Date) {
+    async function compareDates(ctx: ContextMessageUpdate, date: Date, f: comparisonFunction) {
         let user = await getUser(ctx)
         let l = await transactionRepository.find({
-            transactionDate: LaterThan(date),
+            transactionDate: f(date),
             user: user
         })
         if (l.length == 0) {
@@ -136,10 +137,18 @@ createConnection().then(async connection => {
         }
         l.forEach(e => {
             ctx.replyWithMarkdown(
-                "\u{2665} *"+TURKISH_LIRA+"*"+e.amount+"\n"
-                +"\u{2663} *Tanım: *" + e.description+"\n"
-                +"\u{2660} *Tarih:*   "+e.transactionDate.toLocaleString("tr-TR"))
+                "\u{2663} *" + TURKISH_LIRA + "*" + e.amount + "\n"
+                + "\u{2665} *Tanım: *" + e.description + "\n"
+                + "\u{2660} *Tarih:*   " + e.transactionDate.toLocaleString("tr-TR"))
         })
+    }
+
+    async function afterDate(ctx: ContextMessageUpdate, date: Date) {
+        await compareDates(ctx, date, LaterThan)
+    }
+
+    async function beforeDate(ctx: ContextMessageUpdate, date: Date) {
+        await compareDates(ctx, date, EarlierThan)
     }
 
     async function afterHour(ctx: ContextMessageUpdate) {
@@ -148,10 +157,21 @@ createConnection().then(async connection => {
         let hour = parseInt(arr[0])
         let min = parseInt(arr[1])
         let currentDate = new Date()
-        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hour, min, 0, 0)
+        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hour, min, 0)
         await afterDate(ctx, queryDate)
     }
     bot.hears(/^[>]\s*\d{2}[:]\d{2}/iu, afterHour)
+
+    async function beforeHour(ctx: ContextMessageUpdate) {
+        let m = ctx.message.text
+        let arr = m.substr(1).split(":")
+        let hour = parseInt(arr[0])
+        let min = parseInt(arr[1])
+        let currentDate = new Date()
+        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hour, min, 0)
+        await beforeDate(ctx, queryDate)
+    }
+    bot.hears(/^[<]\s*\d{2}[:]\d{2}/iu, beforeHour)
 
     async function afterDay(ctx: ContextMessageUpdate) {
         let message = ctx.message.text
@@ -161,7 +181,17 @@ createConnection().then(async connection => {
         await afterDate(ctx, queryDate)
     }
     bot.command("after", afterDay)
-    bot.hears(/[>]\s*\d{1,2}/iu, afterDay)
+    bot.hears(/^[>]\s*\d{1,2}$/iu, afterDay)
+
+    async function beforeDay(ctx: ContextMessageUpdate) {
+        let message = ctx.message.text
+        let day = parseInt(message.substr(1))
+        let currentDate = new Date()
+        let queryDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+        await beforeDate(ctx, queryDate)
+    }
+    bot.command("before", beforeDay)
+    bot.hears(/^[<]\s*\d{1,2}$/iu, beforeDay)
 
     async function afterMonth(ctx: ContextMessageUpdate) {
         ctx.reply(ctx.message.text)
@@ -178,8 +208,30 @@ createConnection().then(async connection => {
     bot.command("today", todaysTransaction)
     bot.hears(/^today|bug[uü]n$/iu, todaysTransaction)
 
-
-
+    //     async function onHelp(ctx: ContextMessageUpdate) {
+    //         let str = `
+    // Bu bot kolay harcama takibi yapmanıza imkan sağlar.
+    // *net*: O anki bakiyenizi gösterir.
+    // *today*: O gün yaptığınız işlemleri gösterir.
+    // *bugün*: O gün yaptığınız işlemleri gösterir.
+    // *[SAYI] [AÇIKLAMA]*: Gider kaydı oluşturulmasını sağlar.
+    // *"12 kahve"*
+    // *-[SAYI] [AÇIKLAMA]* : Gider kaydı oluşturulmasını sağlar.
+    // *"-12 kahve"*
+    // *+[SAYI] [AÇIKLAMA]*: Gelir kaydı oluşturulmasını sağlar.
+    // *"+500 kyk kredisi"*
+    // *>[2 BASAMAKLI SAYI]*: Ayın belirtilen gününden sonraki kayıtları gösterir.
+    // *">29"*
+    // *>[2 BASAMAKLI SAYI]*:[2 BASAMAKLI SAYI]*: O günkü belirtilen saatten sonraki kayıtları gösterir.
+    // *">13:54"*
+    // *<[2 BASAMAKLI SAYI]*: Ayın belirtilen gününden önceki kayıtları gösterir.
+    // *"<29"*
+    // *<[2 BASAMAKLI SAYI]:[2 BASAMAKLI SAYI]*: O günkü belirtilen saatten önceki kayıtları gösterir.
+    // *"<13:54"*
+    //         `
+    //         ctx.replyWithMarkdown(str)
+    //     }
+    //     bot.command("help", onHelp)
 
     bot.launch()
 }).catch(error => console.log(error));
