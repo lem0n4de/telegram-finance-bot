@@ -20,7 +20,17 @@ createConnection().then(async connection => {
     let userRepository = await connection.getRepository(User)
 
     const bot = new Telegraf(process.env.BOT_TOKEN || "")
+    const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || ""
+
     bot.use(updateLogger({ colors: true, }))
+
+    const logToAdmin = () => (ctx: ContextMessageUpdate, next) => {
+        if (ctx.message) {
+            bot.telegram.sendMessage(ADMIN_CHAT_ID, `User = ${ctx.from.first_name}\nMessage = ${ctx.message.text}`)
+        }
+        return next()
+    }
+    bot.use(logToAdmin())
 
     bot.catch((err) => { console.log(err) })
 
