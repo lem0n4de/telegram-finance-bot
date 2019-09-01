@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { createConnection, Transaction, Any, FindOperator } from "typeorm";
-import Telegraf, { ContextMessageUpdate, Context, Composer } from "telegraf"
-// const { Composer } = require("telegraf")
+import Telegraf, { ContextMessageUpdate } from "telegraf"
 const Extra = require('telegraf/extra')
 const Markup = require('telegraf/markup')
 import { MoneyTransaction } from "./entity/Transaction";
@@ -75,13 +74,21 @@ createConnection().then(async connection => {
     bot.command("rc", removeCategories)
 
     async function getUser(ctx: ContextMessageUpdate) {
-        let user = await userRepository.findOne({ name: ctx.chat.username })
+        let user = await userRepository.findOneOrFail({ name: ctx.from.first_name })
         if (user) {
+            console.log(`Found a user with username ${user.name}`)
             return user
         }
-        user = new User(ctx.chat.username)
+        user = new User(ctx.from.first_name)
+        console.log(`New user = ${user}`)
         return await userRepository.save(user)
     }
+
+    bot.command("start", async (ctx) => {
+        let user = new User(ctx.from.first_name)
+        ctx.reply("Hoşgeldin " + user.name)
+        return await userRepository.save(user)
+    })
 
     async function gider(ctx: ContextMessageUpdate) {
         if (ctx.message) {
