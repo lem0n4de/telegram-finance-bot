@@ -28,7 +28,7 @@ export class MoneyTransaction {
     transactionDate: Date
 
     @Column({
-        nullable : false 
+        nullable: true
     })
-    description : string
+    description: string
 }

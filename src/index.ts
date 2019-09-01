@@ -1,12 +1,15 @@
 import "reflect-metadata";
 import { createConnection, Transaction, Any, FindOperator } from "typeorm";
-import Telegraf, { ContextMessageUpdate, Context } from "telegraf"
+import Telegraf, { ContextMessageUpdate, Context, Composer } from "telegraf"
+// const { Composer } = require("telegraf")
 const Extra = require('telegraf/extra')
 const Markup = require('telegraf/markup')
 import { MoneyTransaction } from "./entity/Transaction";
 import { Category } from "./entity/Category";
 import { User } from './entity/User'
 import { LaterThan, EarlierThan } from "./Date";
+import { closestIndexTo } from "date-fns";
+const updateLogger = require("telegraf-update-logger")
 
 const TURKISH_LIRA = "\u{20BA}"
 type comparisonFunction = (x: Date) => FindOperator<string>
@@ -17,8 +20,9 @@ createConnection().then(async connection => {
     let userRepository = await connection.getRepository(User)
 
     const bot = new Telegraf(process.env.BOT_TOKEN || "")
+    bot.use(updateLogger({ colors: true, }))
 
-    bot.use(Telegraf.log())
+    bot.catch((err) => { console.log(err) })
 
     function stripCommand(str: string) {
         if (str.startsWith("/")) {
@@ -79,6 +83,8 @@ createConnection().then(async connection => {
                 let t = new MoneyTransaction(user, false, amount, date)
                 transactionRepository.save(t)
                 ctx.reply(ctx.match[1] + " miktarlı " + date.toLocaleString("tr-TR") + " zamanlı işlem kaydedildi. \u{1F44D}")
+                let newMoney = user.money -= t.amount
+                userRepository.createQueryBuilder().update().set({ money: newMoney }).where("name = :name", { name: user.name }).execute()
                 return
             }
             let desc = ctx.match[2]
@@ -102,6 +108,8 @@ createConnection().then(async connection => {
             if (ctx.match[2] == undefined) {
                 let t = new MoneyTransaction(user, true, amount, date)
                 transactionRepository.save(t)
+                let newMoney = user.money += t.amount
+                userRepository.createQueryBuilder().update().set({ money: newMoney }).where("name = :name", { name: user.name }).execute()
                 ctx.reply(ctx.match[1] + " miktarlı " + date.toLocaleString("tr-TR") + " zamanlı işlem kaydedildi. \u{1F44D}")
                 return
             }

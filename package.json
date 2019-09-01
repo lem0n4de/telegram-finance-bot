@@ -12,6 +12,7 @@
       "reflect-metadata": "^0.1.10",
       "sqlite3": "^4.1.0",
       "telegraf": "^3.32.0",
+      "telegraf-update-logger": "^1.1.6",
       "typeorm": "0.2.18"
    },
    "scripts": {

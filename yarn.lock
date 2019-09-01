@@ -1080,6 +1080,13 @@ tar@^4:
     safe-buffer "^5.1.2"
     yallist "^3.0.3"
 
+telegraf-update-logger@^1.1.6:
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/telegraf-update-logger/-/telegraf-update-logger-1.1.6.tgz#a450e8445f8c932845282873174e00d4305497cb"
+  integrity sha512-vruQH4svIPk03scoKAsOo8V0DMxxlKHsWaJMTm6TradaU3BnewdLalE3lYJbT96zTcJc9doGX2L1ZP7Xm34ing==
+  dependencies:
+    chalk "^2.4.2"
+
 telegraf@^3.32.0:
   version "3.32.0"
   resolved "https://registry.yarnpkg.com/telegraf/-/telegraf-3.32.0.tgz#70ec304b9c8645f8988924ebe90e5c00ee46ddbb"
