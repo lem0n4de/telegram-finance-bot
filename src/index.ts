@@ -23,15 +23,22 @@ createConnection().then(async connection => {
 
     bot.use(updateLogger({ colors: true, }))
 
+    function sendMessageToAdmin(msg: string) {
+        bot.telegram.sendMessage(ADMIN_CHAT_ID, msg)
+    }
+
     const logToAdmin = () => (ctx: ContextMessageUpdate, next) => {
         if (ctx.message) {
-            bot.telegram.sendMessage(ADMIN_CHAT_ID, `User = ${ctx.from.first_name}\nMessage = ${ctx.message.text}`)
+            sendMessageToAdmin(`User = ${ctx.from.first_name}\nMessage = ${ctx.message.text}`)
         }
         return next()
     }
     bot.use(logToAdmin())
 
-    bot.catch((err) => { console.log(err) })
+    bot.catch((err) => {
+        console.log(err)
+        sendMessageToAdmin(`Bir hata oluştu: \n ${err}`)
+    })
 
     function stripCommand(str: string) {
         if (str.startsWith("/")) {
@@ -74,7 +81,7 @@ createConnection().then(async connection => {
     bot.command("rc", removeCategories)
 
     async function getUser(ctx: ContextMessageUpdate) {
-        let user = await userRepository.findOneOrFail({ name: ctx.from.first_name })
+        let user = await userRepository.findOne({ name: ctx.from.first_name })
         if (user) {
             console.log(`Found a user with username ${user.name}`)
             return user
@@ -94,13 +101,15 @@ createConnection().then(async connection => {
         if (ctx.message) {
             // Eğer match[2] yok ise Date tanımlı işlem girilecek
             let date = new Date()
-            let amount = parseFloat(ctx.match[1])
+            let amount = parseFloat(ctx.match[1].replace(/\./g, '').replace(',', '.'))
+            console.log(amount)
             let user = await getUser(ctx)
             if (ctx.match[2] == undefined) {
                 let t = new MoneyTransaction(user, false, amount, date)
                 transactionRepository.save(t)
                 ctx.reply(ctx.match[1] + " miktarlı " + date.toLocaleString("tr-TR") + " zamanlı işlem kaydedildi. \u{1F44D}")
                 let newMoney = user.money -= t.amount
+                console.log(` Net money is ${newMoney}`)
                 userRepository.createQueryBuilder().update().set({ money: newMoney }).where("name = :name", { name: user.name }).execute()
                 return
             }
@@ -113,14 +122,14 @@ createConnection().then(async connection => {
         }
     }
     bot.command("gi", gider)
-    bot.hears(/^[-]\s*(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/iu, gider)
-    bot.hears(/^(\d+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)*/iu, gider)
+    bot.hears(/^[-]\s*([\d,.]+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)?/iu, gider)
+    bot.hears(/^([\d,.]+)\s*([\w\sığüşçöIĞÜŞÇÖ]+)*$/iu, gider)
 
     async function gelir(ctx: ContextMessageUpdate) {
         if (ctx.message) {
             // Eğer match[2] yok ise Date tanımlı işlem girilecek
             let date = new Date()
-            let amount = parseFloat(ctx.match[1])
+            let amount = parseFloat(ctx.match[1].replace(/\./g, '').replace(',', '.'))
             let user = await getUser(ctx)
             if (ctx.match[2] == undefined) {
                 let t = new MoneyTransaction(user, true, amount, date)
@@ -139,7 +148,7 @@ createConnection().then(async connection => {
         }
     }
     bot.command("ge", gelir)
-    bot.hears(/^[+]\s*(\d+)\s*([\w\sığüşçö]+)?/iu, gelir)
+    bot.hears(/^[+]\s*([\d,.]+)\s*([\w\sığüşçö]+)?/iu, gelir)
 
     async function currentMoney(ctx: ContextMessageUpdate) {
         if (ctx.message) {
