@@ -27,14 +27,6 @@ createConnection().then(async connection => {
         bot.telegram.sendMessage(ADMIN_CHAT_ID, msg)
     }
 
-    const logToAdmin = () => (ctx: ContextMessageUpdate, next) => {
-        if (ctx.message) {
-            sendMessageToAdmin(`User = ${ctx.from.first_name}\nMessage = ${ctx.message.text}`)
-        }
-        return next()
-    }
-    bot.use(logToAdmin())
-
     bot.catch((err) => {
         console.log(err)
         sendMessageToAdmin(`Bir hata oluştu: \n ${err}`)
