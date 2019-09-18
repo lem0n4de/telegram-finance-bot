@@ -6,3 +6,4 @@ tmp/
 yarn-error.log
 database.sqlite
 deploy.sh
+env.sh

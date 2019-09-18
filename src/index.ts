@@ -24,17 +24,29 @@ createConnection()
     let userRepository = await connection.getRepository(User);
 
     const bot = new Telegraf(process.env.BOT_TOKEN || "");
-    const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "";
+    const loggerBot = new Telegraf(process.env.LOGGER_BOT_TOKEN || "");
+    const LOGGING_CHAT_ID = process.env.LOG_CHAT_ID || "";
 
     bot.use(updateLogger({ colors: true }));
 
-    function sendMessageToAdmin(msg: string) {
-      bot.telegram.sendMessage(ADMIN_CHAT_ID, msg);
+    function log(msg: string) {
+      loggerBot.telegram.sendMessage(LOGGING_CHAT_ID, msg);
     }
+
+    bot.use(async (ctx, next) => {
+      next();
+      let message = ctx.message.text;
+      let user = await getUser(ctx);
+      log(`
+FROM ----- ${user.name}
+MESSAGE ----- ${message}
+CURRENT MONEY ----- ${user.money}
+`);
+    });
 
     bot.catch(err => {
       console.log(err);
-      sendMessageToAdmin(`Bir hata oluştu: \n ${err}`);
+      log(`Bir hata oluştu: \n ${err}`);
     });
 
     function stripCommand(str: string) {
@@ -330,16 +342,19 @@ createConnection()
         ctx.replyWithMarkdown("Kullanım: /help _komut adı_");
         return;
       }
-      /* create a new command let command = "something" */ 
-      let commandsList = [/* Add command command here */];
+      /* create a new command let command = "something" */
+
+      let commandsList = [
+        /* Add command command here */
+      ];
       if (!commandsList.includes(command)) {
         ctx.reply(
           "Bilinmeyen bir komut girildi. Lütfen tekrar deneyiniz. ¯\\_(ツ)_/¯"
         );
       }
       switch (command) {
-          case "": // Check for each command here
-              break
+        case "": // Check for each command here
+          break;
       }
     }
     bot.command("help", onHelp);
