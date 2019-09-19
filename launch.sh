@@ -5,11 +5,9 @@ while [ "$1" != "" ]; do
     case $PARAM in
         -p | --production)
             export PROD=true
-            exit
             ;;
         -dev | --development)
             export PROD=false
-            exit
             ;;
         *)
             echo "ERROR: unknown parameter \"$PARAM\""

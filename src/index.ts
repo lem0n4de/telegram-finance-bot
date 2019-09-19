@@ -336,6 +336,29 @@ CURRENT MONEY ----- ${user.money}
     bot.command("today", todaysTransaction);
     bot.hears(/^today|bug[uü]n$/iu, todaysTransaction);
 
+    async function onEditBalance(ctx: ContextMessageUpdate) {
+      let command = stripCommand(ctx.message.text);
+      if (!command) {
+        ctx.reply("HATA!!! LÜTFEN TEKRAR DENE! \u{1F916}");
+        return;
+      }
+      let balance = parseFloat(command.replace(/\./g, "").replace(",", "."));
+      if (!balance) {
+        ctx.reply("LÜTFEN SAYI GİRER MİSİNİZ??? \u{1F620}");
+        return;
+      }
+      let user = await getUser(ctx);
+      userRepository
+        .createQueryBuilder()
+        .update()
+        .set({ money: balance })
+        .where("id = :userId", { userId: user.id })
+        .execute();
+      ctx.reply("İşleminiz başarıyla gerçekleştirildi.");
+      return await currentMoney(ctx);
+    }
+    bot.command("bakiyeduzelt", onEditBalance);
+
     async function onHelp(ctx: ContextMessageUpdate) {
       let command = stripCommand(ctx.message.text);
       if (!command) {
