@@ -400,25 +400,27 @@ CURRENT MONEY ----- ${user.money}
         return;
       }
       let user = await getUserWithTransactions(ctx);
-      let tr = user.transactions.filter(val => val.transactionNumber == transactionId);
+      let tr = user.transactions.filter(
+        val => val.transactionNumber == transactionId
+      );
       if (tr.length > 0) {
         ctx.replyWithMarkdown(
           "\u{2666} * ID: *" +
-          tr[0].transactionNumber +
-          "\n" +
-          "\u{2663} *" +
-          TURKISH_LIRA +
-          "*" +
-          tr[0].amount +
-          "\n" +
-          "\u{2665} *Tanım: *" +
-          tr[0].description +
-          "\n" +
-          "\u{2660} *Tarih:*   " +
-          tr[0].transactionDate.toLocaleString("tr-TR")
+            tr[0].transactionNumber +
+            "\n" +
+            "\u{2663} *" +
+            TURKISH_LIRA +
+            "*" +
+            tr[0].amount +
+            "\n" +
+            "\u{2665} *Tanım: *" +
+            tr[0].description +
+            "\n" +
+            "\u{2660} *Tarih:*   " +
+            tr[0].transactionDate.toLocaleString("tr-TR")
         );
       } else {
-        ctx.reply("No transaction found.")
+        ctx.reply("No transaction found.");
       }
     }
     bot.command("/islem", onGetSingleTransaction);
