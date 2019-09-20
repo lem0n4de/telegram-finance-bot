@@ -1,34 +1,52 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  ManyToOne
+} from "typeorm";
 import { Category } from "./Category";
 import { User } from "./User";
 
 @Entity()
 export class MoneyTransaction {
-    constructor(user: User, positive: boolean, amount: number, date: Date, desc: string = "") {
-        this.user = user
-        this.positive = positive
-        this.amount = amount
-        this.transactionDate = date
-        this.description = desc
-    }
+  constructor(
+    user: User,
+    transactionNumber: number,
+    positive: boolean,
+    amount: number,
+    date: Date,
+    desc: string = ""
+  ) {
+    this.user = user;
+    this.transactionNumber = transactionNumber;
+    this.positive = positive;
+    this.amount = amount;
+    this.transactionDate = date;
+    this.description = desc;
+  }
 
-    @PrimaryGeneratedColumn()
-    id: number
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @ManyToOne(type => User, user => user.transactions)
-    user: User
+  @Column("integer")
+  transactionNumber: number;
 
-    @Column("boolean")
-    positive: boolean
+  @ManyToOne(type => User, user => user.transactions)
+  user: User;
 
-    @Column("double")
-    amount: number
+  @Column("boolean")
+  positive: boolean;
 
-    @Column("datetime")
-    transactionDate: Date
+  @Column("double")
+  amount: number;
 
-    @Column({
-        nullable: true
-    })
-    description: string
+  @Column("datetime")
+  transactionDate: Date;
+
+  @Column({
+    nullable: true
+  })
+  description: string;
 }

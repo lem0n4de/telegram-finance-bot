@@ -92,12 +92,18 @@ CURRENT MONEY ----- ${user.money}
 
     async function getUser(ctx: ContextMessageUpdate) {
       let user = await userRepository.findOne({ name: ctx.from.first_name });
-      if (user) {
-        console.log(`Found a user with username ${user.name}`);
-        return user;
-      }
+      if (user) return user;
       user = new User(ctx.from.first_name);
-      console.log(`New user = ${user}`);
+      return await userRepository.save(user);
+    }
+
+    async function getUserWithTransactions(ctx: ContextMessageUpdate) {
+      let user = await userRepository.findOne(
+        { name: ctx.from.first_name },
+        { relations: ["transactions"] }
+      );
+      if (user) return user;
+      user = new User(ctx.from.first_name);
       return await userRepository.save(user);
     }
 
@@ -115,10 +121,15 @@ CURRENT MONEY ----- ${user.money}
         let amount = parseFloat(
           ctx.match[1].replace(/\./g, "").replace(",", ".")
         );
-        console.log(amount);
-        let user = await getUser(ctx);
+        let user = await getUserWithTransactions(ctx);
         if (ctx.match[2] == undefined) {
-          let t = new MoneyTransaction(user, false, amount, date);
+          let t = new MoneyTransaction(
+            user,
+            user.transactions.length + 1,
+            false,
+            amount,
+            date
+          );
           transactionRepository.save(t);
           ctx.reply(
             ctx.match[1] +
@@ -137,7 +148,14 @@ CURRENT MONEY ----- ${user.money}
           return;
         }
         let desc = ctx.match[2];
-        let t = new MoneyTransaction(user, false, amount, date, desc);
+        let t = new MoneyTransaction(
+          user,
+          user.transactions.length + 1,
+          false,
+          amount,
+          date,
+          desc
+        );
         transactionRepository.save(t);
         let newMoney = (user.money -= t.amount);
         userRepository
@@ -165,9 +183,15 @@ CURRENT MONEY ----- ${user.money}
         let amount = parseFloat(
           ctx.match[1].replace(/\./g, "").replace(",", ".")
         );
-        let user = await getUser(ctx);
+        let user = await getUserWithTransactions(ctx);
         if (ctx.match[2] == undefined) {
-          let t = new MoneyTransaction(user, true, amount, date);
+          let t = new MoneyTransaction(
+            user,
+            user.transactions.length + 1,
+            true,
+            amount,
+            date
+          );
           transactionRepository.save(t);
           let newMoney = (user.money += t.amount);
           userRepository
@@ -185,7 +209,14 @@ CURRENT MONEY ----- ${user.money}
           return;
         }
         let desc = ctx.match[2];
-        let t = new MoneyTransaction(user, true, amount, date, desc);
+        let t = new MoneyTransaction(
+          user,
+          user.transactions.length + 1,
+          true,
+          amount,
+          date,
+          desc
+        );
         transactionRepository.save(t);
         let newMoney = (user.money += t.amount);
         userRepository
@@ -232,7 +263,10 @@ CURRENT MONEY ----- ${user.money}
       }
       l.forEach(e => {
         ctx.replyWithMarkdown(
-          "\u{2663} *" +
+          "\u{2666} * ID: *" +
+            e.transactionNumber +
+            "\n" +
+            "\u{2663} *" +
             TURKISH_LIRA +
             "*" +
             e.amount +
@@ -358,6 +392,36 @@ CURRENT MONEY ----- ${user.money}
       return await currentMoney(ctx);
     }
     bot.command("bakiyeduzelt", onEditBalance);
+
+    async function onGetSingleTransaction(ctx: ContextMessageUpdate) {
+      let transactionId = parseInt(stripCommand(ctx.message.text));
+      if (!transactionId) {
+        ctx.reply("HATA!!! LÜTFEN TEKRAR DENE! \u{1F916}");
+        return;
+      }
+      let user = await getUserWithTransactions(ctx);
+      let tr = user.transactions.filter(val => val.transactionNumber == transactionId);
+      if (tr.length > 0) {
+        ctx.replyWithMarkdown(
+          "\u{2666} * ID: *" +
+          tr[0].transactionNumber +
+          "\n" +
+          "\u{2663} *" +
+          TURKISH_LIRA +
+          "*" +
+          tr[0].amount +
+          "\n" +
+          "\u{2665} *Tanım: *" +
+          tr[0].description +
+          "\n" +
+          "\u{2660} *Tarih:*   " +
+          tr[0].transactionDate.toLocaleString("tr-TR")
+        );
+      } else {
+        ctx.reply("No transaction found.")
+      }
+    }
+    bot.command("/islem", onGetSingleTransaction);
 
     async function onHelp(ctx: ContextMessageUpdate) {
       let command = stripCommand(ctx.message.text);

@@ -23,4 +23,5 @@ if [ "$?" != 0 ]; then
 fi
 git pull
 yarn install
+ts-node ./node_modules/typeorm/cli.js migration:run
 yarn start > telegram-finance-bot.log
