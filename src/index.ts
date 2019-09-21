@@ -420,10 +420,26 @@ CURRENT MONEY ----- ${user.money}
             tr[0].transactionDate.toLocaleString("tr-TR")
         );
       } else {
-        ctx.reply("No transaction found.");
+        ctx.reply("HATA!!! İŞLEM BULUNAMADI \u{1F916}");
       }
     }
     bot.command("/islem", onGetSingleTransaction);
+
+    async function onDeleteSingleTransaction(ctx: ContextMessageUpdate) {
+      let transactionId = parseInt(stripCommand(ctx.message.text));
+      if (!transactionId) {
+        ctx.reply("HATA!!! LÜTFEN TEKRAR DENE! \u{1F916}");
+        return;
+      }
+      let user = await getUser(ctx)
+      let res = await transactionRepository
+        .createQueryBuilder()
+        .delete()
+        .where("transactionNumber = :trId and userId = :userId", { trId: transactionId, userId: user.id })
+        .execute();
+      ctx.reply("İşlem başarıyla silindi \u{1F44D}.");
+    }
+    bot.command("/sil", onDeleteSingleTransaction);
 
     async function onHelp(ctx: ContextMessageUpdate) {
       let command = stripCommand(ctx.message.text);
